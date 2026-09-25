@@ -8,7 +8,11 @@ const nextConfig = {
     // directory guarantees it ships with the deployed function on Vercel.
     outputFileTracingIncludes: {
       '/api/segments/route': ['./content/segments/**/*'],
+      '/api/segments/[id]/route': ['./content/segments/**/*'],
+      '/api/segments/[id]/whatif/route': ['./content/segments/**/*'],
+      '/api/segments/compare/route': ['./content/segments/**/*'],
       '/': ['./content/segments/**/*'],
+      '/compare/page': ['./content/segments/**/*'],
       '/segment/[id]/page': ['./content/segments/**/*']
     }
   }

@@ -244,22 +244,30 @@ select {
 
 .location-picker {
   position: relative;
-  min-width: 280px;
+  width: min(320px, 32vw);
+  max-width: 100%;
+  min-width: 220px;
+  flex: 0 0 320px;
 }
 
 .location-search-wrap {
   position: relative;
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .location-search-input {
   width: 100%;
-  min-width: 200px;
+  min-width: 0;
+  max-width: 100%;
   border: none;
   background: transparent;
   color: var(--text);
   font-weight: 600;
   outline: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .location-search-input::placeholder {

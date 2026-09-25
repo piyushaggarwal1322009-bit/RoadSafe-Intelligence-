@@ -81,7 +81,7 @@ export default function AppNavigation({ children }) {
   const handleSelectLocation = (location) => {
     setQuery(location.name);
     setShowSuggestions(false);
-    router.push(`/segment/${location.id}`);
+    router.push(`/segment/${location.id}`, { scroll: false });
   };
 
   return (

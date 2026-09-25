@@ -177,12 +177,52 @@ select {
   justify-content: space-between;
   gap: 14px;
   padding: 22px 28px 18px;
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 10;
+  box-shadow: 0 8px 20px rgba(17, 29, 46, 0.04);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-brand {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.mobile-brand-mark {
+  width: 32px;
+  height: 32px;
+  font-size: 0.72rem;
+}
+
+.mobile-nav-toggle {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 8px;
+}
+
+.mobile-nav-toggle span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--text);
+  border-radius: 999px;
+  margin: 5px 0;
 }
 
 .topbar-picker {
@@ -214,6 +254,24 @@ select {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.mobile-nav {
+  display: none;
+  padding: 12px 18px 18px;
+  background: rgba(17, 29, 46, 0.96);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobile-nav .nav-item {
+  color: rgba(237, 245, 255, 0.8);
+  width: 100%;
+  border-radius: 10px;
+}
+
+.mobile-nav .nav-item.active {
+  background: rgba(30, 142, 168, 0.14);
+  color: #fff;
 }
 
 .ghost-button,
@@ -1085,6 +1143,7 @@ input:focus-visible {
   }
 
   .sidebar {
+    display: none;
     width: 100%;
     padding-bottom: 18px;
   }
@@ -1095,8 +1154,31 @@ input:focus-visible {
   }
 
   .workspace-topbar {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .topbar-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .topbar-brand {
+    display: flex;
+  }
+
+  .mobile-nav-toggle {
+    display: inline-block;
+  }
+
+  .mobile-nav {
+    display: block;
+  }
+
+  .topbar-picker {
+    width: 100%;
+    order: 3;
   }
 
   .topbar-actions {
@@ -1117,6 +1199,20 @@ input:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .workspace-topbar {
+    padding: 16px 18px;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .profile-chip {
+    flex: 1;
+    justify-content: center;
+  }
+
   .hero-panel,
   .recommendation-box,
   .highlight-box,
@@ -1126,11 +1222,6 @@ input:focus-visible {
   .forecast-card,
   .interventions-card {
     padding: 18px 16px;
-  }
-
-  .profile-chip {
-    flex: 1;
-    justify-content: center;
   }
 
   .section-head,

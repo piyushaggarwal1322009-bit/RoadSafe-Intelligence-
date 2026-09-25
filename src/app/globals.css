@@ -242,12 +242,63 @@ select {
   letter-spacing: 0.08em;
 }
 
-.topbar-picker select {
+.location-picker {
+  position: relative;
+  min-width: 280px;
+}
+
+.location-search-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.location-search-input {
+  width: 100%;
+  min-width: 200px;
   border: none;
   background: transparent;
   color: var(--text);
   font-weight: 600;
-  min-width: 200px;
+  outline: none;
+}
+
+.location-search-input::placeholder {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.location-search-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.location-search-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.location-search-item:hover,
+.location-search-item:focus-visible {
+  background: rgba(30, 142, 168, 0.08);
+  outline: none;
 }
 
 .topbar-actions {

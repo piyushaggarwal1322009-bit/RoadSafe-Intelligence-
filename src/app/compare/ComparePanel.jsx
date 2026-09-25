@@ -8,6 +8,13 @@ import RiskGauge from '@/components/RiskGauge';
 import FactorBreakdown from '@/components/FactorBreakdown';
 import ForecastPanel from '@/components/ForecastPanel';
 
+const BAND_COLOR = {
+  Low: '#2aa576',
+  Medium: '#d7a52d',
+  High: '#eb8c43',
+  Severe: '#e45757'
+};
+
 const COMPARE_FIELDS = [
   ['roadType', 'Road type'],
   ['speedLimit', 'Speed limit'],
@@ -24,13 +31,28 @@ function SegmentColumn({ segment }) {
   const forecast = useMemo(() => computeForecast(segment, risk.score), [segment, risk.score]);
 
   return (
-    <div className="card">
-      <h3>{segment.name}</h3>
+    <div className="card comparison-column">
+      <div className="comparison-card-header">
+        <div>
+          <p className="eyebrow subtle">Corridor</p>
+          <h3>{segment.name}</h3>
+        </div>
+        <span className="cell-pill" style={{ color: BAND_COLOR[risk.band], background: `${BAND_COLOR[risk.band]}12` }}>
+          {risk.band}
+        </span>
+      </div>
+
       <RiskGauge score={risk.score} band={risk.band} />
-      <h3 style={{ marginTop: 20 }}>Top factors</h3>
-      <FactorBreakdown factors={risk.factors.slice(0, 4)} />
-      <h3 style={{ marginTop: 20 }}>Outlook</h3>
-      <ForecastPanel forecast={forecast} currentScore={risk.score} />
+
+      <div className="mini-compare-group">
+        <h4>Top factors</h4>
+        <FactorBreakdown factors={risk.factors.slice(0, 4)} />
+      </div>
+
+      <div className="mini-compare-group">
+        <h4>Outlook</h4>
+        <ForecastPanel forecast={forecast} currentScore={risk.score} />
+      </div>
     </div>
   );
 }
@@ -39,49 +61,62 @@ export default function ComparePanel({ segments }) {
   const params = useSearchParams();
   const initialA = params.get('a') || segments[0]?.id;
   const initialB = segments.find((s) => s.id !== initialA)?.id || segments[1]?.id;
+  const initialC = segments.find((s) => s.id !== initialA && s.id !== initialB)?.id || segments[2]?.id || initialA;
 
-  const [idA, setIdA] = useState(initialA);
-  const [idB, setIdB] = useState(initialB);
+  const [ids, setIds] = useState([initialA, initialB, initialC]);
 
-  const segA = segments.find((s) => s.id === idA);
-  const segB = segments.find((s) => s.id === idB);
+  const selectedSegments = ids.map((id) => segments.find((segment) => segment.id === id)).filter(Boolean);
+
+  const updateSelection = (index, value) => {
+    setIds((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
 
   return (
     <div>
-      <div className="grid-2" style={{ marginBottom: 20 }}>
-        <select value={idA} onChange={(e) => setIdA(e.target.value)}>
-          {segments.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <select value={idB} onChange={(e) => setIdB(e.target.value)}>
-          {segments.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-      </div>
-
-      <div className="grid-2">
-        {segA && <SegmentColumn segment={segA} />}
-        {segB && <SegmentColumn segment={segB} />}
-      </div>
-
-      <div className="card" style={{ marginTop: 20 }}>
-        <h3>Raw conditions</h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: '6px 0', color: 'var(--text-muted)' }}>Factor</th>
-              <th style={{ textAlign: 'left', padding: '6px 0', color: 'var(--text-muted)' }}>{segA?.name}</th>
-              <th style={{ textAlign: 'left', padding: '6px 0', color: 'var(--text-muted)' }}>{segB?.name}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {COMPARE_FIELDS.map(([key, label]) => (
-              <tr key={key} style={{ borderTop: '1px solid var(--border)' }}>
-                <td style={{ padding: '6px 0' }}>{label}</td>
-                <td style={{ padding: '6px 0' }}>{String(segA?.[key])}</td>
-                <td style={{ padding: '6px 0' }}>{String(segB?.[key])}</td>
-              </tr>
+      <div className="compare-select-grid">
+        {ids.map((id, index) => (
+          <select key={`select-${index}`} value={id || ''} onChange={(event) => updateSelection(index, event.target.value)}>
+            {segments.map((segment) => (
+              <option key={segment.id} value={segment.id}>{segment.name}</option>
             ))}
-          </tbody>
-        </table>
+          </select>
+        ))}
+      </div>
+
+      <div className="compare-grid">
+        {selectedSegments.map((segment) => (
+          <SegmentColumn key={segment.id} segment={segment} />
+        ))}
+      </div>
+
+      <div className="card comparison-table-card">
+        <h3>Raw conditions</h3>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Factor</th>
+                {selectedSegments.map((segment) => (
+                  <th key={segment.id}>{segment.name}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARE_FIELDS.map(([key, label]) => (
+                <tr key={key}>
+                  <td>{label}</td>
+                  {selectedSegments.map((segment) => (
+                    <td key={`${segment.id}-${key}`}>{String(segment[key])}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

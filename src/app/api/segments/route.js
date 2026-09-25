@@ -1,16 +1,22 @@
-import { NextResponse } from 'next/server';
-import { getAllSegments } from '@/lib/markdown';
-import { computeRisk } from '@/lib/risk';
+'use strict';
 
-// Segment data only changes when content/segments/*.md changes at build
-// time, so this route is rendered once at build and cached — avoiding
-// any runtime filesystem access in the deployed serverless function.
-export const dynamic = 'force-static';
+const { NextResponse } = require('next/server');
+const { listSegments } = require('../../../lib/roadsafe-service');
 
-export async function GET() {
-  const segments = getAllSegments().map((s) => {
-    const risk = computeRisk(s);
-    return { ...s, riskScore: risk.score, riskBand: risk.band };
-  });
+exports.dynamic = 'force-static';
+
+async function GET() {
+  const segments = listSegments().map((segment) => ({
+    id: segment.id,
+    name: segment.name,
+    lat: segment.lat,
+    lng: segment.lng,
+    roadType: segment.roadType,
+    riskScore: segment.riskScore,
+    riskBand: segment.riskBand
+  }));
+
   return NextResponse.json({ count: segments.length, segments });
 }
+
+module.exports = { GET };

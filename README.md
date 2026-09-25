@@ -1,59 +1,83 @@
 # RoadSafe Intelligence
 
-An interactive road-safety intelligence platform: pick a road segment, see
-its computed risk score and the factors driving it, compare it against
-another segment, see where risk is trending, and get concrete, justified
-safety interventions — then change conditions (speed limit, lighting,
-crosswalks, traffic volume...) and watch the score recompute live.
+RoadSafe Intelligence is a location-based safety planning dashboard that turns crash history, exposure patterns, and operational conditions into a clear risk picture and a recommended intervention strategy.
 
-Road segment data lives as **Markdown files with frontmatter** under
-`content/segments/`, so adding or editing a location is a content change,
-not a code change. The app itself is a small Next.js project, deployable
-to Vercel with zero configuration.
+This version keeps the same Next.js foundation and risk model, but upgrades the product experience into a polished executive dashboard: a professional app shell, responsive metric cards, a map-first risk overview, contributor breakdowns, a scenario simulator, comparison tables, and forward-looking forecast panels.
 
-## How the "must haves" are met
+## New UI structure
 
-| Requirement | Where |
-|---|---|
-| Interactive view of road-safety info | `/` — SVG map + sortable segment list |
-| Risk score for a location | `src/lib/risk.js` → shown on `/segment/[id]` |
-| Major contributing factors | `FactorBreakdown` component, sorted by point contribution |
-| Compare locations/conditions | `/compare` — side-by-side score, factors, outlook, raw conditions table |
-| Forward-looking risk indication | `src/lib/forecast.js` — trend + planned-growth projection, shown as an outlook panel |
-| Recommended interventions | `src/lib/interventions.js` — rule-based, tied to the top factors |
-| Show risk changing with conditions | "What-if" panel on `/segment/[id]` — every control recomputes the score live, client-side |
+The app now follows a modern operations-dashboard pattern:
 
-## Architecture
+- A left navigation shell for Overview, Risk Map, Compare Corridors, Forecasts, Interventions, and Settings
+- A top bar with location selection, period filter, notifications, and user profile
+- A risk hero with the current score, status, and explanation summary
+- A map-first layout with a selected corridor detail panel and risk legend
+- Clear contributor bars and interactive scenario controls
+- Responsive comparison tables and intervention prioritization cards
 
-```
-content/segments/*.md   → segment data (frontmatter) + narrative notes (body)
-src/lib/markdown.js     → zero-dependency frontmatter parser + loader (server-only, uses fs)
-src/lib/risk.js         → pure risk-scoring function (isomorphic — runs on server AND in the browser)
-src/lib/forecast.js     → linear trend + growth-rate projection
-src/lib/interventions.js→ rule-based factor → intervention mapping
-src/components/*        → presentational + interactive UI pieces
-src/app/*               → Next.js App Router pages (server components load data, client components handle interactivity)
+## Key files
+
+- `src/app/page.js` — executive overview dashboard
+- `src/components/RiskDashboard.jsx` — interactive dashboard UI and scenario logic
+- `src/components/SegmentMap.jsx` — risk hotspot map with selected state support
+- `src/app/compare/page.js` and `src/app/compare/ComparePanel.jsx` — corridor comparison experience
+- `src/app/segment/[id]/SegmentClient.jsx` — detailed location drilldown
+- `src/lib/risk.js`, `src/lib/forecast.js`, and `src/lib/interventions.js` — calculation and recommendation logic
+
+## How to run locally
+
+Requires Node.js 18+.
+
+```bash
+npm install
+npm run dev
 ```
 
-The scoring, forecasting, and intervention logic is deliberately **rule-based
-and transparent**, not a black-box ML model — every number on screen can be
-traced back to a specific, named factor and weight. That's what lets the
-"what-if" panel recompute instantly in the browser with no server round-trip:
-`risk.js` has no dependency on Node APIs, so the exact same function that
-renders the initial score on the server also re-runs on every slider change.
+Then open http://localhost:3000.
 
-### Risk model
+For a production build:
 
-Composite score (0–100) is a weighted sum of seven normalized (0–1) factors:
-crash history & severity (30%), speed differential (15%), pedestrian/cyclist
-exposure (15%), lighting (10%), traffic volume (10%), intersection
-complexity (10%), adverse-weather exposure (10%). Weights and the
-normalization curve for each factor are documented inline in
-`src/lib/risk.js`.
+```bash
+npm run build
+npm start
+```
 
-### Adding a new segment
+## Backend API and data access
 
-Create a new file in `content/segments/`, e.g. `content/segments/my-road.md`:
+This project uses the existing Next.js app as its backend runtime. The data model remains Markdown-driven in `content/segments/`, while the reusable logic lives in `src/lib/roadsafe-service.js` and the route handlers expose it through API endpoints.
+
+Available endpoints:
+
+- `GET /api/health` — service status metadata
+- `GET /api/segments` — list all segments with summary risk fields
+- `GET /api/segments/:id` — detailed segment record plus risk, forecast, and interventions
+- `POST /api/segments/:id` — same detail endpoint with override payloads for what-if recalculation
+- `POST /api/segments/:id/whatif` — scenario-based recalculation payload
+- `GET /api/segments/compare?a=ID1&b=ID2` — side-by-side score comparison
+
+The route logic reuses the same scoring model as the UI so the dashboard and the API stay consistent.
+
+## Interactive map
+
+The app uses Leaflet with OpenStreetMap tiles for the risk hotspot map. This is intentionally client-only to avoid server-side `window` access during static prerendering.
+
+- Map library: `leaflet` + `react-leaflet`
+- Tiles: OpenStreetMap, no API key required
+- Behavior: markers color-code risk band, fit bounds to the loaded segments, and open a popup with direct detail navigation
+
+## Testing
+
+The project includes a small Node-based regression suite for the shared service layer and health route:
+
+```bash
+npm test
+```
+
+## Adding or editing segment data
+
+Segment records are still stored as Markdown frontmatter in `content/segments/`. The dashboard reads those files directly, so adding or editing a location remains a content change rather than a code change.
+
+Example:
 
 ```markdown
 ---
@@ -79,66 +103,9 @@ seriousInjuryCrashesLast5yr: 1
 Free-text notes about the location go here.
 ```
 
-It will automatically appear on the map, in the segment list, and as a
-comparison option — no code changes needed.
+## Design and product notes
 
-## Local development
-
-Requires Node.js 18+.
-
-```bash
-npm install
-npm run dev
-```
-
-Visit `http://localhost:3000`.
-
-```bash
-npm run build && npm start   # production build, local
-```
-
-## Deploying to Vercel
-
-1. Push this repository to GitHub/GitLab/Bitbucket.
-2. In Vercel: **New Project → Import** the repo. Framework preset
-   `Next.js` is auto-detected — no build command or environment
-   variables are required.
-3. Deploy. Every push to the default branch redeploys automatically.
-
-Alternatively, from the CLI:
-
-```bash
-npm i -g vercel
-vercel --prod
-```
-
-Note on data updates: since segment data is read from Markdown files at
-build time, editing a `.md` file and pushing/redeploying is how you update
-the dataset in production — there is no runtime database to manage.
-
-## Project structure notes / trade-offs
-
-- **No map-tile provider (Leaflet/Mapbox) and no chart library.** The map
-  is a coordinate-normalized SVG scatter plot and all charts are plain SVG
-  bars — this keeps the dependency list to just `next`/`react`/`react-dom`,
-  avoids API keys, and means the app has no external network dependency to
-  render. Swapping in a real tile provider later only touches
-  `SegmentMap.jsx`.
-- **Frontmatter parser is hand-rolled**, not `gray-matter`, for the same
-  reason: one fewer dependency for a schema this small.
-- **`next.config.js` explicitly includes `content/segments/` in the
-  serverless function bundle** (`outputFileTracingIncludes`). Next's
-  automatic file-tracing can miss `fs` reads built from a dynamic path
-  (as `markdown.js` does), which would otherwise cause the API route to
-  fail in production despite working locally.
-
-## Repository contents
-
-```
-content/segments/*.md      sample data (5 segments)
-src/lib/                   risk, forecast, intervention, markdown-loader logic
-src/components/            reusable UI pieces
-src/app/                   pages (Next.js App Router)
-README.md                  this file
-AI_USAGE_NOTE.md           AI usage disclosure
-```
+- The dashboard keeps the transparent, rule-based safety model already in place instead of replacing the stack.
+- The app remains mobile-first and uses semantic HTML, focus states, and high-contrast text to support accessibility.
+- The UI is intentionally calm and operational: navy surfaces, white cards, teal accents, and restrained amber/red risk signals.
+- Empty, loading, and interactive states are handled in the live dashboard flow without introducing fake UI.

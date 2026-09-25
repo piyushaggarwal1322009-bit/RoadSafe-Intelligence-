@@ -11,6 +11,13 @@ import ForecastPanel from '@/components/ForecastPanel';
 import InterventionList from '@/components/InterventionList';
 import WhatIfPanel from '@/components/WhatIfPanel';
 
+const BAND_COLOR = {
+  Low: '#2aa576',
+  Medium: '#d7a52d',
+  High: '#eb8c43',
+  Severe: '#e45757'
+};
+
 export default function SegmentClient({ segment }) {
   const [overrides, setOverrides] = useState({});
 
@@ -22,50 +29,85 @@ export default function SegmentClient({ segment }) {
   const hasOverrides = Object.keys(overrides).length > 0;
 
   return (
-    <main className="container">
-      <p className="muted"><Link href="/">&larr; All segments</Link></p>
-      <h2 style={{ marginTop: 4 }}>{segment.name}</h2>
-      <p className="muted" style={{ marginBottom: 20 }}>{segment.description}</p>
+    <main className="page-shell detail-shell">
+      <section className="card detail-hero">
+        <div className="detail-header-row">
+          <div>
+            <p className="eyebrow">Road segment</p>
+            <h1>{segment.name}</h1>
+            <p className="detail-description">{segment.description}</p>
+          </div>
+          <Link href="/" className="ghost-button">← Overview</Link>
+        </div>
+      </section>
 
-      <div className="grid-2">
-        <div className="card">
-          <h3>Current risk score</h3>
+      <div className="detail-grid">
+        <section className="card detail-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Current risk</p>
+              <h2>Risk score</h2>
+            </div>
+            <span className="score-status" style={{ background: `${BAND_COLOR[current.band]}1A`, color: BAND_COLOR[current.band] }}>
+              {current.band}
+            </span>
+          </div>
+
           <RiskGauge score={current.score} band={current.band} />
+
           {hasOverrides && (
-            <p className="muted" style={{ marginTop: 10 }}>
+            <p className="muted detail-note">
               Recorded conditions score: {baseline.score} ({baseline.band}) — adjust the panel below to see impact.
             </p>
           )}
 
-          <h3 style={{ marginTop: 24 }}>Major contributing factors</h3>
-          <FactorBreakdown factors={current.factors} />
-        </div>
+          <div className="detail-factor-block">
+            <h3>Major contributors</h3>
+            <FactorBreakdown factors={current.factors} />
+          </div>
+        </section>
 
-        <div className="card">
-          <h3>What-if: change conditions</h3>
+        <section className="card detail-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Scenario</p>
+              <h2>What-if conditions</h2>
+            </div>
+          </div>
+
           <WhatIfPanel
             segment={segment}
             overrides={overrides}
             onChange={setOverrides}
             onReset={() => setOverrides({})}
           />
-        </div>
+        </section>
       </div>
 
-      <div className="grid-2" style={{ marginTop: 20 }}>
-        <div className="card">
-          <h3>Forward-looking outlook</h3>
+      <div className="detail-grid lower-grid">
+        <section className="card detail-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Forecast</p>
+              <h2>Forward-looking outlook</h2>
+            </div>
+          </div>
           <ForecastPanel forecast={forecast} currentScore={current.score} />
-        </div>
+        </section>
 
-        <div className="card">
-          <h3>Recommended interventions</h3>
+        <section className="card detail-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Interventions</p>
+              <h2>Recommended actions</h2>
+            </div>
+          </div>
           <InterventionList interventions={interventions} />
-        </div>
+        </section>
       </div>
 
-      <p className="muted" style={{ marginTop: 20 }}>
-        <Link href={`/compare?a=${segment.id}`}>Compare this segment against another &rarr;</Link>
+      <p className="detail-link-row">
+        <Link href={`/compare?a=${segment.id}`} className="text-link">Compare this segment against another →</Link>
       </p>
     </main>
   );

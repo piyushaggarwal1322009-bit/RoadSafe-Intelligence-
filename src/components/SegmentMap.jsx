@@ -1,64 +1,112 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 
 const BAND_COLOR = {
-  Low: '#3fb950',
-  Medium: '#d4a72c',
-  High: '#e8763a',
-  Severe: '#e5484d'
+  Low: '#2aa576',
+  Medium: '#d7a52d',
+  High: '#eb8c43',
+  Severe: '#e45757'
 };
 
-/**
- * Lightweight coordinate-based scatter "map". Deliberately avoids a
- * tile-server dependency (Leaflet/Mapbox) so the app renders instantly
- * with no API keys and no external network calls — swap in a real map
- * provider later without touching the risk/forecast/intervention logic.
- */
-export default function SegmentMap({ segments }) {
+let Leaflet;
+
+function getLeaflet() {
+  if (typeof window === 'undefined') return null;
+  if (!Leaflet) {
+    Leaflet = require('leaflet');
+  }
+  return Leaflet;
+}
+
+function createRiskMarker(color) {
+  const L = getLeaflet();
+  if (!L) return null;
+
+  return L.divIcon({
+    className: 'roadsafe-risk-marker',
+    html: `<span style="background:${color};"></span>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    popupAnchor: [0, -10]
+  });
+}
+
+function FitMapBounds({ points }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!points.length) return;
+
+    const L = getLeaflet();
+    if (!L) return;
+
+    const bounds = L.latLngBounds(points.map((segment) => [segment.lat, segment.lng]));
+    map.fitBounds(bounds, { padding: [28, 28], maxZoom: 12 });
+  }, [map, points]);
+
+  return null;
+}
+
+export default function SegmentMap({ segments, selectedId = null }) {
+  if (typeof window === 'undefined') {
+    return (
+      <div className="leaflet-map-shell">
+        <div className="roadsafe-map" aria-label="Map loading" />
+      </div>
+    );
+  }
+
   const router = useRouter();
-  const [hovered, setHovered] = useState(null);
 
-  const points = useMemo(() => {
-    const lats = segments.map((s) => s.lat);
-    const lngs = segments.map((s) => s.lng);
-    const latMin = Math.min(...lats), latMax = Math.max(...lats);
-    const lngMin = Math.min(...lngs), lngMax = Math.max(...lngs);
-    const pad = 40, w = 680, h = 320;
+  const points = useMemo(
+    () => segments.filter(Boolean).map((segment) => ({ ...segment, riskBand: segment.riskBand || 'Low' })),
+    [segments]
+  );
 
-    return segments.map((s) => {
-      const x = pad + ((s.lng - lngMin) / (lngMax - lngMin || 1)) * (w - pad * 2);
-      const y = h - pad - ((s.lat - latMin) / (latMax - latMin || 1)) * (h - pad * 2);
-      return { ...s, x, y };
-    });
-  }, [segments]);
+  const center = useMemo(() => {
+    if (!points.length) {
+      return [40.7128, -74.006];
+    }
+
+    const averageLat = points.reduce((sum, point) => sum + point.lat, 0) / points.length;
+    const averageLng = points.reduce((sum, point) => sum + point.lng, 0) / points.length;
+    return [averageLat, averageLng];
+  }, [points]);
 
   return (
-    <div className="card">
-      <svg width="100%" viewBox="0 0 680 320" role="img" aria-label="Map of road segments colored by risk level">
-        <rect x="0" y="0" width="680" height="320" fill="#0e1620" rx="8" />
-        {points.map((p) => (
-          <g
-            key={p.id}
-            onClick={() => router.push(`/segment/${p.id}`)}
-            onMouseEnter={() => setHovered(p.id)}
-            onMouseLeave={() => setHovered(null)}
-            style={{ cursor: 'pointer' }}
+    <div className="leaflet-map-shell">
+      <MapContainer center={center} zoom={11} scrollWheelZoom className="roadsafe-map">
+        <TileLayer
+          attribution='&copy; OpenStreetMap contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <FitMapBounds points={points} />
+
+        {points.map((segment) => (
+          <Marker
+            key={segment.id}
+            position={[segment.lat, segment.lng]}
+            icon={createRiskMarker(BAND_COLOR[segment.riskBand] || BAND_COLOR.Low)}
+            eventHandlers={{
+              click: () => router.push(`/segment/${segment.id}`)
+            }}
           >
-            <circle cx={p.x} cy={p.y} r={hovered === p.id ? 12 : 9} fill={BAND_COLOR[p.riskBand]} opacity={0.9} />
-            <circle cx={p.x} cy={p.y} r={hovered === p.id ? 12 : 9} fill="none" stroke="#0b0f14" strokeWidth="1.5" />
-            {hovered === p.id && (
-              <text x={p.x + 16} y={p.y + 4} fontSize="12" fill="#e7edf3">
-                {p.name} · {p.riskScore}
-              </text>
-            )}
-          </g>
+            <Popup>
+              <div className="map-popup">
+                <strong>{segment.name}</strong>
+                <span>
+                  {segment.riskBand} risk · {segment.riskScore}
+                </span>
+                <Link href={`/segment/${segment.id}`}>Open detail</Link>
+              </div>
+            </Popup>
+          </Marker>
         ))}
-      </svg>
-      <div className="muted" style={{ marginTop: 8 }}>
-        Click a point to open its full risk assessment. Color indicates risk band (green → red = low → severe).
-      </div>
+      </MapContainer>
     </div>
   );
 }
